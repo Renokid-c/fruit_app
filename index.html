@@ -32,8 +32,6 @@
         const { useState, useEffect } = React;
 
         // Иконки из Lucide-React - имитируем их SVG кодом, так как библиотека не загружается напрямую
-        // В реальном проекте React с npm, вы бы импортировали их.
-        // Здесь мы просто используем SVG-иконки напрямую или эмодзи, чтобы избежать зависимостей.
         const ShoppingCart = ({ size = 24, className = "" }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
         );
@@ -61,13 +59,15 @@
         const Minus = ({ size = 24, className = "" }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M5 12h14"/></svg>
         );
+        const Loader2 = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+        );
 
 
         // Главный компонент приложения
         function App() {
-          // Список продуктов (фрукты и овощи)
-          // Цены указаны за 1 кг или за пучок (для зелени)
           const [products] = useState([
+            // Эмодзи вместо URL картинок
             { id: 1, name: 'Яблоко', price: 300, category: 'Фрукты', imageUrl: '🍎', unit: 'кг' },
             { id: 2, name: 'Абрикос', price: 240, category: 'Фрукты', imageUrl: '🍑', unit: 'кг' },
             { id: 3, name: 'Авокадо', price: 500, category: 'Фрукты', imageUrl: '🥑', unit: 'кг' },
@@ -77,7 +77,7 @@
             { id: 7, name: 'Киви', price: 320, category: 'Фрукты', imageUrl: '🥝', unit: 'кг' },
             { id: 8, name: 'Лимон', price: 180, category: 'Фрукты', imageUrl: '🍋', unit: 'кг' },
             { id: 9, name: 'Лайм', price: 220, category: 'Фрукты', imageUrl: '🟢', unit: 'кг' },
-            { id: 10, name: 'Манго', price: 560, category: 'Фрукты', imageUrl: '�', unit: 'кг' },
+            { id: 10, name: 'Манго', price: 560, category: 'Фрукты', imageUrl: '🥭', unit: 'кг' },
             { id: 11, name: 'Апельсин', price: 260, category: 'Фрукты', imageUrl: '🍊', unit: 'кг' },
             { id: 12, name: 'Персик', price: 340, category: 'Фрукты', imageUrl: '🍑', unit: 'кг' },
             { id: 13, name: 'Груша', price: 280, category: 'Фрукты', imageUrl: '🍐', unit: 'кг' },
@@ -134,46 +134,41 @@
             { id: 54, name: 'Мята', price: 40, category: 'Зелень', imageUrl: '🌿', unit: 'пучок' },
           ]);
 
-          // Состояние корзины
           const [cart, setCart] = useState([]);
-          // Состояние отображения корзины
           const [isCartOpen, setIsCartOpen] = useState(false);
-          // Состояние отображения формы заказа
           const [isOrderFormOpen, setIsOrderFormOpen] = useState(false);
-          // Состояние сообщения о заказе
           const [orderMessage, setOrderMessage] = useState('');
-          // Данные формы заказа
           const [orderFormData, setOrderFormData] = useState({
             name: '',
             phone: '',
             address: '',
-            notes: '', // Поле для примечаний
+            notes: '',
           });
-          // Ошибки формы
           const [formErrors, setFormErrors] = useState({});
-          // Выбранная категория для фильтрации продуктов
-          const [selectedCategory, setSelectedCategory] = useState('Все'); // По умолчанию показывать все
-          // Состояние для отображения обратной связи "Добавлено!"
+          const [selectedCategory, setSelectedCategory] = useState('Все');
           const [addedToCartFeedback, setAddedToCartFeedback] = useState({});
-          // Состояние для поискового запроса
           const [searchQuery, setSearchQuery] = useState('');
-          // Состояние для временного количества товара на карточке
           const [tempProductQuantities, setTempProductQuantities] = useState({});
+          const [isLoading, setIsLoading] = useState(false);
+          // userId теперь может быть получен из Telegram WebApp.initDataUnsafe
+          const [userId, setUserId] = useState('Анонимный'); 
 
-          // Эффект для автоматического расширения Mini App при загрузке
           useEffect(() => {
-            // Проверяем, что объект Telegram WebApp API доступен
+            // Разворачиваем Mini App на весь экран WebView
             if (window.Telegram && window.Telegram.WebApp) {
-              // Разворачиваем Mini App на весь экран WebView
               window.Telegram.WebApp.expand();
+              // Если доступны данные инициализации, можно получить ID пользователя Telegram
+              if (window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+                setUserId(window.Telegram.WebApp.initDataUnsafe.user.id.toString());
+              }
+            } else {
+                console.warn("Telegram WebApp API не доступен. Некоторые функции Mini App (как sendData) могут не работать.");
             }
-          }, []); // Пустой массив зависимостей означает, что эффект запустится один раз при монтировании компонента
+          }, []);
 
-
-          // Функция добавления товара в корзину из карточки
           const addItemToCartFromCard = (product) => {
-            const quantityToAdd = tempProductQuantities[product.id] || (product.unit === 'пучок' ? 1 : 0.5); // Use temp quantity or default
-            if (quantityToAdd <= 0) return; // Don't add if quantity is 0
+            const quantityToAdd = tempProductQuantities[product.id] || (product.unit === 'пучок' ? 1 : 0.5);
+            if (quantityToAdd <= 0) return;
 
             setCart((prevCart) => {
               const existingItem = prevCart.find((item) => item.id === product.id);
@@ -186,18 +181,13 @@
               }
             });
 
-            // Reset temp quantity for this product after adding to cart
             setTempProductQuantities((prev) => ({ ...prev, [product.id]: 0 }));
-
-            // Устанавливаем обратную связь "Добавлено!"
             setAddedToCartFeedback((prev) => ({ ...prev, [product.id]: true }));
             setTimeout(() => {
               setAddedToCartFeedback((prev) => ({ ...prev, [product.id]: false }));
             }, 1500);
           };
 
-
-          // Функция для увеличения количества на карточке продукта
           const incrementProductQuantity = (productId, unit) => {
             setTempProductQuantities((prev) => {
               const currentQuantity = prev[productId] || 0;
@@ -208,12 +198,10 @@
             });
           };
 
-          // Функция для уменьшения количества на карточке продукта
           const decrementProductQuantity = (productId, unit) => {
             setTempProductQuantities((prev) => {
               const currentQuantity = prev[productId] || 0;
               const minQuantity = unit === 'пучок' ? 1 : 0.5;
-              // Уменьшаем только если текущее количество больше минимального
               return {
                 ...prev,
                 [productId]: Math.max(minQuantity, currentQuantity - (unit === 'пучок' ? 1 : 0.5)),
@@ -221,12 +209,10 @@
             });
           };
 
-          // Функция удаления товара из корзины (в модальном окне корзины)
           const removeFromCart = (productId) => {
             setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
           };
 
-          // Функция изменения количества товара в корзине (в модальном окне корзины)
           const updateCartQuantity = (productId, newQuantity) => {
             setCart((prevCart) =>
               prevCart.map((item) => {
@@ -239,30 +225,26 @@
             );
           };
 
-          // Вычисление общей стоимости корзины
           const getTotalPrice = () => {
             return cart.reduce((total, item) => total + item.price * item.quantity, 0);
           };
 
-          // Обработка перехода к форме заказа
           const proceedToOrderForm = () => {
             if (cart.length === 0) {
               setOrderMessage('Ваша корзина пуста. Добавьте товары перед оформлением заказа.');
               return;
             }
-            setIsCartOpen(false); // Закрываем корзину
-            setIsOrderFormOpen(true); // Открываем форму заказа
-            setFormErrors({}); // Очищаем предыдущие ошибки формы
+            setIsCartOpen(false);
+            setIsOrderFormOpen(true);
+            setFormErrors({});
           };
 
-          // Обработка ввода данных в форму
           const handleFormChange = (e) => {
             const { name, value } = e.target;
             setOrderFormData((prevData) => ({ ...prevData, [name]: value }));
           };
 
-          // Обработка отправки формы заказа
-          const submitOrder = () => {
+          const submitOrder = async () => {
             const errors = {};
             if (!orderFormData.name.trim()) {
               errors.name = 'Пожалуйста, введите ваше имя.';
@@ -279,48 +261,81 @@
               return;
             }
 
-            // В реальном приложении здесь будет отправка заказа на сервер
-            console.log('Оформлен заказ:', {
-              items: cart,
-              totalPrice: getTotalPrice(),
-              customerInfo: orderFormData,
-            });
+            setIsLoading(true); // Показываем индикатор загрузки
+            try {
+              const orderDetails = {
+                userId: userId, // ID пользователя из Telegram, если доступно
+                customerName: orderFormData.name,
+                customerPhone: orderFormData.phone,
+                deliveryAddress: orderFormData.address,
+                orderNotes: orderFormData.notes,
+                items: cart.map(item => ({
+                  id: item.id,
+                  name: item.name,
+                  quantity: item.quantity,
+                  unit: item.unit,
+                  pricePerUnit: item.price,
+                  imageUrl: item.imageUrl // Включаем эмодзи в данные заказа
+                })),
+                totalPrice: getTotalPrice(),
+                orderDate: new Date().toISOString(), // Дата заказа в формате ISO
+                status: 'pending' // Начальный статус заказа
+              };
 
-            setOrderMessage('Ваш заказ успешно оформлен! Мы свяжемся с вами в ближайшее время.');
-            setCart([]); // Очищаем корзину
-            setOrderFormData({ name: '', phone: '', address: '', notes: '' }); // Очищаем форму, включая примечания
-            setIsOrderFormOpen(false); // Закрываем форму заказа
+              // Отправка данных заказа в Telegram-бот через Telegram Web App API
+              if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.sendData) {
+                  window.Telegram.WebApp.sendData(JSON.stringify(orderDetails));
+                  setOrderMessage('Ваш заказ успешно оформлен! Информация отправлена в бота.');
+                  // Можно закрыть Mini App после отправки, если это необходимо
+                  // window.Telegram.WebApp.close();
+              } else {
+                  setOrderMessage('Ошибка: Telegram WebApp API недоступен. Не удалось отправить заказ боту.');
+                  console.error('Telegram WebApp.sendData не доступен. Заказ не отправлен боту:', orderDetails);
+              }
+
+            } catch (e) {
+              console.error("Ошибка при отправке заказа:", e);
+              setOrderMessage('Произошла ошибка при оформлении заказа. Пожалуйста, попробуйте еще раз.');
+            } finally {
+              setIsLoading(false); // Скрываем индикатор загрузки
+              setCart([]); // Очищаем корзину
+              setOrderFormData({ name: '', phone: '', address: '', notes: '' });
+              setIsOrderFormOpen(false);
+            }
           };
 
-          // Фильтрация продуктов по выбранной категории и поисковому запросу
           const filteredProducts = products.filter(product => {
             const matchesCategory = selectedCategory === 'Все' || product.category === selectedCategory;
             const matchesSearch = searchQuery.toLowerCase() === '' || product.name.toLowerCase().includes(searchQuery.toLowerCase());
             return matchesCategory && matchesSearch;
           });
 
-          // Общее количество единиц в корзине для отображения
           const totalCartUnits = cart.reduce((total, item) => total + item.quantity, 0);
 
           return (
-            <div className="min-h-screen bg-gray-50 font-sans text-gray-800 flex flex-col items-center p-4 pb-20 sm:p-6 sm:pb-24 md:p-8 md:pb-28"> {/* Added padding-bottom for fixed button */}
+            <div className="min-h-screen bg-gray-50 font-sans text-gray-800 flex flex-col items-center p-4 pb-20 sm:p-6 sm:pb-24 md:p-8 md:pb-28">
               {/* Шапка */}
               <header className="w-full max-w-4xl bg-green-700 shadow-xl rounded-b-xl p-4 sm:p-6 mb-6 sm:mb-8 flex justify-between items-center transform -translate-y-2">
                 <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-green-300 font-['Inter'] drop-shadow-lg">
                   Овощи и фрукты 🌿
                 </h1>
-                <button
-                  onClick={() => setIsCartOpen(true)}
-                  className="relative p-2 sm:p-3 bg-green-300 text-green-800 rounded-full shadow-md hover:bg-green-400 transition duration-300 transform hover:scale-110"
-                >
-                  <ShoppingCart size={20} />
-                  {totalCartUnits > 0 && (
-                    <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-0.5 sm:px-2.5 sm:py-1.5 text-xs sm:text-sm font-extrabold leading-none text-white bg-red-600 rounded-full">
-                      {/* Показываем общее количество единиц (кг или пучки) */}
-                      {totalCartUnits.toFixed(1).replace(/\.0$/, '')} ед.
-                    </span>
-                  )}
-                </button>
+                <div className="flex items-center space-x-3">
+                  {/* Отображаем ID пользователя (для отладки/идентификации) */}
+                  <div className="text-white text-xs sm:text-sm">
+                    ID: <span className="font-bold">{userId.length > 10 ? userId.substring(0, 8) + '...' : userId}</span>
+                  </div>
+                  <button
+                    onClick={() => setIsCartOpen(true)}
+                    className="relative p-2 sm:p-3 bg-green-300 text-green-800 rounded-full shadow-md hover:bg-green-400 transition duration-300 transform hover:scale-110"
+                  >
+                    <ShoppingCart size={20} />
+                    {totalCartUnits > 0 && (
+                      <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-0.5 sm:px-2.5 sm:py-1.5 text-xs sm:text-sm font-extrabold leading-none text-white bg-red-600 rounded-full">
+                        {totalCartUnits.toFixed(1).replace(/\.0$/, '')} ед.
+                      </span>
+                    )}
+                  </button>
+                </div>
               </header>
 
               {/* Кнопки фильтрации по категориям */}
@@ -349,28 +364,28 @@
               </div>
 
               {/* Список продуктов */}
-              <main className="w-full max-w-4xl grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 mb-8"> {/* Adjusted grid for more columns on larger screens, reduced gap */}
+              <main className="w-full max-w-4xl grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 mb-8">
                 {filteredProducts.map((product) => (
                   <div
                     key={product.id}
                     className="bg-white rounded-xl shadow-md p-3 flex flex-col items-center text-center transform hover:scale-105 transition duration-300 border-2 border-green-200 relative overflow-hidden group"
                   >
-                    {/* Overlay для визуального эффекта при наведении */}
                     <div className="absolute inset-0 bg-green-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none"></div>
 
-                    <div className="text-4xl sm:text-5xl mb-2">{product.imageUrl}</div> {/* Reduced emoji size */}
-                    <h2 className="text-lg sm:text-xl font-extrabold mb-1 text-gray-900">{product.name}</h2> {/* Reduced font size */}
-                    <p className="text-md sm:text-lg font-black text-green-600 mb-3">{product.price} сом/{product.unit}</p> {/* Reduced font size, reduced margin */}
+                    {/* Эмодзи вместо изображения */}
+                    <div className="text-4xl sm:text-5xl mb-2">{product.imageUrl}</div>
 
-                    {/* Кнопки +/- и количество на карточке товара */}
-                    <div className="flex items-center justify-center space-x-1 mb-3 w-full"> {/* Reduced space-x, added w-full */}
+                    <h2 className="text-lg sm:text-xl font-extrabold mb-1 text-gray-900">{product.name}</h2>
+                    <p className="text-md sm:text-lg font-black text-green-600 mb-3">{product.price} сом/{product.unit}</p>
+
+                    <div className="flex items-center justify-center space-x-1 mb-3 w-full">
                       <button
                         onClick={() => decrementProductQuantity(product.id, product.unit)}
                         className="p-1 rounded-full bg-green-200 text-green-800 hover:bg-green-300 transition duration-300 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75"
                       >
-                        <Minus size={16} /> {/* Reduced icon size */}
+                        <Minus size={16} />
                       </button>
-                      <span className="text-sm font-bold w-12 text-center border-2 border-gray-300 rounded-md py-0.5"> {/* Reduced font size, reduced width */}
+                      <span className="text-sm font-bold w-12 text-center border-2 border-gray-300 rounded-md py-0.5">
                         {tempProductQuantities[product.id] === undefined || tempProductQuantities[product.id] === 0
                           ? (product.unit === 'пучок' ? '0 пуч.' : '0.0 кг')
                           : `${tempProductQuantities[product.id].toFixed(product.unit === 'пучок' ? 0 : 1)} ${product.unit}`}
@@ -379,7 +394,7 @@
                         onClick={() => incrementProductQuantity(product.id, product.unit)}
                         className="p-1 rounded-full bg-green-200 text-green-800 hover:bg-green-300 transition duration-300 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75"
                       >
-                        <Plus size={16} /> {/* Reduced icon size */}
+                        <Plus size={16} />
                       </button>
                     </div>
 
@@ -445,6 +460,7 @@
                           {cart.map((item) => (
                             <li key={item.id} className="flex justify-between items-center border-b border-gray-200 pb-2">
                               <div className="flex items-center flex-grow">
+                                {/* Эмодзи в корзине */}
                                 <span className="text-3xl sm:text-4xl mr-2 sm:mr-3">{item.imageUrl}</span>
                                 <div>
                                   <p className="font-bold text-base sm:text-lg">{item.name}</p>
@@ -563,8 +579,15 @@
                     <button
                       onClick={submitOrder}
                       className="w-full mt-6 sm:mt-8 py-3 sm:py-4 bg-green-600 text-white font-black rounded-lg shadow-lg hover:bg-green-700 transition duration-300 flex items-center justify-center text-lg sm:text-xl border-b-4 border-green-800 active:border-b-0 active:translate-y-1"
+                      disabled={isLoading}
                     >
-                      Подтвердить Заказ <Package size={20} className="ml-1 sm:ml-2" />
+                      {isLoading ? (
+                        <Loader2 size={20} className="animate-spin mr-2" />
+                      ) : (
+                        <>
+                          Подтвердить Заказ <Package size={20} className="ml-1 sm:ml-2" />
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -579,4 +602,4 @@
         root.render(<App />);
     </script>
 </body>
-</html>
+</html
